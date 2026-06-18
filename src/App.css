@@ -261,11 +261,35 @@
   margin-bottom: 14px;
 }
 
-.slider-value {
+.slider-input-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.slider-input {
+  width: 5.5rem;
+  padding: 6px 10px;
   font-size: 15px;
   font-weight: 700;
-  color: #0f766e;
+  color: var(--brand-teal);
+  text-align: right;
   font-variant-numeric: tabular-nums;
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.slider-input::-webkit-outer-spin-button,
+.slider-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.slider-input-suffix {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
   white-space: nowrap;
 }
 
@@ -391,7 +415,8 @@
 }
 
 .field--error .text-input,
-.field--error .select-trigger {
+.field--error .select-trigger,
+.field--error .slider-input {
   border-color: var(--error);
   background: var(--error-bg);
 }

@@ -215,7 +215,7 @@ export function CalculatorForm({ onValuesChange }) {
                 suffix='m²'
                 min={20}
                 max={2000}
-                step={10}
+                step={1}
                 value={value}
                 onChange={onChange}
                 helpText={FIELD_HELP.floorArea}

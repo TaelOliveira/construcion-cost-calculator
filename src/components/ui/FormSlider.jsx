@@ -1,5 +1,10 @@
+import { useState } from 'react';
 import { cn } from '../../lib/utils';
 import { HelpTooltip } from './Tooltip';
+
+function clamp(value, min, max) {
+  return Math.min(max, Math.max(min, value));
+}
 
 export function FormSlider({
   id,
@@ -16,11 +21,54 @@ export function FormSlider({
   formatValue,
   wide = false,
 }) {
+  const [draft, setDraft] = useState(null);
+
   const numericValue = value === '' || value == null ? min : Number(value);
   const progress = ((numericValue - min) / (max - min)) * 100;
   const displayValue = formatValue
     ? formatValue(numericValue)
     : `${numericValue.toLocaleString('en-AU')}${suffix ? ` ${suffix}` : ''}`;
+
+  const commitValue = (raw) => {
+    if (raw === '' || raw == null) {
+      setDraft(null);
+      return;
+    }
+
+    const parsed = Number(raw);
+    if (Number.isNaN(parsed)) {
+      setDraft(null);
+      return;
+    }
+
+    onChange(clamp(parsed, min, max));
+    setDraft(null);
+  };
+
+  const handleInputChange = (event) => {
+    const raw = event.target.value;
+    setDraft(raw);
+
+    if (raw === '' || raw === '-') return;
+
+    const parsed = Number(raw);
+    if (!Number.isNaN(parsed)) {
+      onChange(clamp(parsed, min, max));
+    }
+  };
+
+  const handleInputBlur = () => {
+    commitValue(draft);
+  };
+
+  const handleInputKeyDown = (event) => {
+    if (event.key === 'Enter') {
+      commitValue(draft);
+      event.currentTarget.blur();
+    }
+  };
+
+  const inputValue = draft !== null ? draft : String(numericValue);
 
   return (
     <div
@@ -32,7 +80,7 @@ export function FormSlider({
     >
       <div className='slider-header'>
         <div className='field-label-row'>
-          <label htmlFor={id} className='field-label'>
+          <label htmlFor={`${id}-input`} className='field-label'>
             {label}
             {required && (
               <span className='field-required' aria-hidden='true'>
@@ -45,9 +93,31 @@ export function FormSlider({
             <HelpTooltip content={helpText} label={`Help: ${label}`} />
           )}
         </div>
-        <output htmlFor={id} className='slider-value'>
-          {displayValue}
-        </output>
+        <div className='slider-input-group'>
+          <input
+            id={`${id}-input`}
+            type='number'
+            className='slider-input text-input'
+            value={inputValue}
+            min={min}
+            max={max}
+            step={step}
+            inputMode='numeric'
+            onChange={handleInputChange}
+            onBlur={handleInputBlur}
+            onKeyDown={handleInputKeyDown}
+            aria-invalid={!!error}
+            aria-valuemin={min}
+            aria-valuemax={max}
+            aria-valuenow={numericValue}
+            aria-valuetext={displayValue}
+          />
+          {suffix && (
+            <span className='slider-input-suffix' aria-hidden='true'>
+              {suffix}
+            </span>
+          )}
+        </div>
       </div>
 
       <input
@@ -59,7 +129,11 @@ export function FormSlider({
         max={max}
         step={step}
         value={numericValue}
-        onChange={(e) => onChange(Number(e.target.value))}
+        onChange={(event) => {
+          setDraft(null);
+          onChange(Number(event.target.value));
+        }}
+        aria-label={label}
         aria-valuemin={min}
         aria-valuemax={max}
         aria-valuenow={numericValue}
