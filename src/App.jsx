@@ -1,125 +1,86 @@
-import { useState } from 'react';
+import { useState, useCallback, useRef } from 'react';
+import { TooltipProvider } from './components/ui/Tooltip';
+import { InfoSection } from './components/layout/InfoSection';
+import { CalculatorForm } from './components/calculator/CalculatorForm';
+import { ResultsPanel } from './components/results/ResultsPanel';
+import { HowItWorksSection } from './components/sections/HowItWorksSection';
+import { CTASection } from './components/sections/CTASection';
+import { calculateConstructionCost } from './lib/calculator';
+import { FINISH_LEVELS } from './lib/constants';
+import { calculatorSchema } from './lib/schema';
 import { SpeedInsights } from '@vercel/speed-insights/react';
 import { Analytics } from '@vercel/analytics/react';
-import reactLogo from './assets/react.svg';
-import viteLogo from './assets/vite.svg';
-import heroImg from './assets/hero.png';
 import './App.css';
 
 function App() {
-  const [count, setCount] = useState(0);
+  const [results, setResults] = useState(null);
+  const [hasCalculated, setHasCalculated] = useState(false);
+  const [finishLabel, setFinishLabel] = useState('');
+
+  const lastKeyRef = useRef('');
+
+  const handleValuesChange = useCallback((values) => {
+    const key = JSON.stringify(values);
+    if (key === lastKeyRef.current) return;
+    lastKeyRef.current = key;
+
+    const parsed = calculatorSchema.safeParse(values);
+    if (parsed.success) {
+      const computed = calculateConstructionCost(parsed.data);
+      const finish =
+        FINISH_LEVELS.find((f) => f.value === parsed.data.finishLevel)?.label ??
+        '';
+      setResults(computed);
+      setFinishLabel(finish);
+      setHasCalculated(true);
+    } else {
+      setResults(null);
+      setFinishLabel('');
+      setHasCalculated(false);
+    }
+  }, []);
 
   return (
-    <>
-      <section id='center'>
-        <div className='hero'>
-          <img src={heroImg} className='base' width='170' height='179' alt='' />
-          <img src={reactLogo} className='framework' alt='React logo' />
-          <img src={viteLogo} className='vite' alt='Vite logo' />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type='button'
-          className='counter'
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
-
-      <div className='ticks'></div>
-
-      <section id='next-steps'>
-        <div id='docs'>
-          <svg className='icon' role='presentation' aria-hidden='true'>
-            <use href='/icons.svg#documentation-icon'></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href='https://vite.dev/' target='_blank'>
-                <img className='logo' src={viteLogo} alt='' />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href='https://react.dev/' target='_blank'>
-                <img className='button-icon' src={reactLogo} alt='' />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id='social'>
-          <svg className='icon' role='presentation' aria-hidden='true'>
-            <use href='/icons.svg#social-icon'></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href='https://github.com/vitejs/vite' target='_blank'>
-                <svg
-                  className='button-icon'
-                  role='presentation'
-                  aria-hidden='true'
-                >
-                  <use href='/icons.svg#github-icon'></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href='https://chat.vite.dev/' target='_blank'>
-                <svg
-                  className='button-icon'
-                  role='presentation'
-                  aria-hidden='true'
-                >
-                  <use href='/icons.svg#discord-icon'></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href='https://x.com/vite_js' target='_blank'>
-                <svg
-                  className='button-icon'
-                  role='presentation'
-                  aria-hidden='true'
-                >
-                  <use href='/icons.svg#x-icon'></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href='https://bsky.app/profile/vite.dev' target='_blank'>
-                <svg
-                  className='button-icon'
-                  role='presentation'
-                  aria-hidden='true'
-                >
-                  <use href='/icons.svg#bluesky-icon'></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className='ticks'></div>
-      <section id='spacer'></section>
+    <TooltipProvider>
       <SpeedInsights />
       <Analytics />
-    </>
+      <div className='app'>
+        <a href='#calculator' className='skip-link'>
+          Skip to calculator
+        </a>
+
+        <InfoSection />
+
+        <main id='calculator' className='calculator-layout'>
+          <div className='calculator-card'>
+            <CalculatorForm onValuesChange={handleValuesChange} />
+          </div>
+
+          <div className='results-sticky-column'>
+            <ResultsPanel
+              results={results}
+              finishLevel={finishLabel}
+              hasCalculated={hasCalculated}
+            />
+          </div>
+        </main>
+
+        <HowItWorksSection
+          steps={results?.steps}
+          hasCalculated={hasCalculated}
+        />
+
+        <CTASection />
+
+        <footer className='app-footer'>
+          <p>
+            Disclaimer: This calculator provides indicative estimates only and
+            should not be relied upon for financial decisions. Seek professional
+            advice from a qualified quantity surveyor for accurate costing.
+          </p>
+        </footer>
+      </div>
+    </TooltipProvider>
   );
 }
 
